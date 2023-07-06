@@ -1,8 +1,9 @@
 package com.example.email.config;
 
-import com.example.email.dto.UserDto;
 import com.example.email.mapper.EmailSenderMapper;
-import com.example.email.processor.EmailItemProcessor;
+import com.example.email.model.Appointment;
+import com.example.email.model.User;
+import com.example.email.repository.AppointmentRepository;
 import com.example.email.writer.SendEmailWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -14,7 +15,6 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.util.List;
 import java.util.Random;
 
 @EnableBatchProcessing
@@ -34,6 +35,9 @@ public class BatchConfig {
 
     @Autowired
     private DataSource dataSource;
+
+    @Autowired
+    AppointmentRepository appointmentRepository;
 
     private final String JOB_NAME = "emailSenderJob";
     private final String STEP_NAME = "emailSenderStep";
@@ -56,7 +60,7 @@ public class BatchConfig {
     public Step emailSenderStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
         return new
                 StepBuilder(STEP_NAME,jobRepository)
-                .<UserDto, UserDto>chunk(100,transactionManager)
+                .<User, List<Appointment>>chunk(100,transactionManager)
                 .reader(emailReader())
                 .processor(sendEmailItemProcessor())
                 .writer(emailWriter())
@@ -64,27 +68,24 @@ public class BatchConfig {
     }
 
     @Bean
-    public ItemWriter<UserDto> userDtoItemWriter(){
-        return new SendEmailWriter();
-    }
-    @Bean
-    public ItemProcessor<UserDto, UserDto> sendEmailItemProcessor() {
-        return new EmailItemProcessor();
+    public ItemProcessor<User, List<Appointment>>sendEmailItemProcessor() {
+        return sendEmailItemProcessor();
     }
 
     @Bean
-    public ItemWriter<UserDto> emailWriter() {
-        return new SendEmailWriter();
+    public SendEmailWriter emailWriter() {
+        return emailWriter();
     }
 
     @Bean
-    public ItemReader<UserDto> emailReader() {
+    public ItemReader<User> emailReader() {
         String sql = "SELECT email FROM speciality";
-        return new JdbcCursorItemReaderBuilder<UserDto>()
+        return new JdbcCursorItemReaderBuilder<User>()
                 .name("emailReader")
                 .sql(sql)
                 .dataSource(dataSource)
                 .rowMapper(new EmailSenderMapper())
                 .build();
     }
+
 }
