@@ -12,11 +12,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class EmailItemProcessor implements ItemProcessor<User, User> {
 
-    private final EmailServiceImpl emailSenderService;
+    private final EmailServiceImpl emailService;
 
     @Autowired
     public EmailItemProcessor(EmailServiceImpl emailSenderService) {
-        this.emailSenderService = emailSenderService;
+        this.emailService = emailSenderService;
     }
 
     @Override
@@ -30,7 +30,7 @@ public class EmailItemProcessor implements ItemProcessor<User, User> {
                     "...\n\n" + // Add the list of appointments here
                     "Regards";
 
-            emailSenderService.sendSimpleMessage(user.getEmail(), subject, content);
+            emailService.sendSimpleMessage(user.getEmail(), subject, content);
             log.debug("Email sent to '{}': Subject - '{}', Content - '{}'", user.getEmail(), subject, content);
 
             user.setEmailSent(true);
