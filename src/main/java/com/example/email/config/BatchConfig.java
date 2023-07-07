@@ -3,7 +3,6 @@ package com.example.email.config;
 import com.example.email.mapper.EmailSenderMapper;
 import com.example.email.model.Appointment;
 import com.example.email.model.User;
-import com.example.email.reader.DoctorItemReader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -125,9 +124,5 @@ public class BatchConfig {
         asyncTaskExecutor.setConcurrencyLimit(10);
         return asyncTaskExecutor;
     }
-    @Bean
-    public DoctorItemReader emailReaderService() {
-        return emailReaderService();
 
-    }
 }
