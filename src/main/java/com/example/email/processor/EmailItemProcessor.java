@@ -1,6 +1,6 @@
 package com.example.email.processor;
 
-import com.example.email.model.User;
+import com.example.email.dto.UserDto;
 import com.example.email.services.EmailServiceImpl;
 import jakarta.mail.SendFailedException;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class EmailItemProcessor implements ItemProcessor<User, User> {
+public class EmailItemProcessor implements ItemProcessor<UserDto, UserDto> {
 
     private final EmailServiceImpl emailService;
 
@@ -20,7 +20,7 @@ public class EmailItemProcessor implements ItemProcessor<User, User> {
     }
 
     @Override
-    public User process(User user) throws Exception {
+    public UserDto process(UserDto user) throws Exception {
         log.debug("Processing user: {}", user.getEmail());
 
         try {
@@ -39,6 +39,9 @@ public class EmailItemProcessor implements ItemProcessor<User, User> {
             log.debug("Failed to send email to '{}': {}", user.getEmail(), e.getMessage());
         }
 
+
         return user;
     }
+
+
 }
