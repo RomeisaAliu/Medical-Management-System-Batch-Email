@@ -23,7 +23,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
@@ -34,15 +33,14 @@ import java.util.Map;
 @EnableJpaRepositories(basePackages = "com.example.email.repository")
 @ComponentScan(basePackages = "com.example.email")
 public class BatchConfig {
-    private final JavaMailSender mailSender;
     private final DataSource dataSource;
     private final EmailServiceImpl emailService;
     private final EmailSenderService senderService;
 
     @Autowired
-    public BatchConfig(DataSource dataSource, JavaMailSender mailSender, EmailServiceImpl emailService, EmailSenderService senderService) {
+    public BatchConfig(DataSource dataSource, EmailServiceImpl emailService, EmailSenderService senderService) {
         this.dataSource = dataSource;
-        this.mailSender = mailSender;
+
         this.emailService = emailService;
         this.senderService = senderService;
     }
@@ -87,7 +85,7 @@ public class BatchConfig {
 
     @Bean
     public EmailItemWriter writer() {
-        return  new EmailItemWriter(mailSender, senderService);
+        return  new EmailItemWriter( senderService);
 
     }
 
