@@ -1,122 +1,113 @@
 package com.example.email.config;
 
+
+import com.example.email.EmailSenderService;
+import com.example.email.dto.UserDto;
 import com.example.email.mapper.EmailSenderMapper;
-import com.example.email.model.Appointment;
-import com.example.email.model.User;
-import lombok.extern.slf4j.Slf4j;
+import com.example.email.processor.EmailItemProcessor;
+import com.example.email.services.EmailServiceImpl;
+import com.example.email.writer.EmailItemWriter;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
-import org.springframework.batch.item.file.FlatFileItemReader;
-import org.springframework.batch.item.file.LineMapper;
-import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
-import org.springframework.batch.item.file.mapping.DefaultLineMapper;
-import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.Order;
+import org.springframework.batch.item.database.support.MySqlPagingQueryProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-@EnableBatchProcessing
-@Slf4j
 @Configuration
+@EnableJpaRepositories(basePackages = "com.example.email.repository")
+@ComponentScan(basePackages = "com.example.email")
 public class BatchConfig {
-
-    @Value("${file.path}")
-    private String filePath;
-
+    private final JavaMailSender mailSender;
     private final DataSource dataSource;
+    private final EmailServiceImpl emailService;
+    private final EmailSenderService senderService;
+
     @Autowired
-    public BatchConfig(DataSource dataSource) {
+    public BatchConfig(DataSource dataSource, JavaMailSender mailSender, EmailServiceImpl emailService, EmailSenderService senderService) {
         this.dataSource = dataSource;
+        this.mailSender = mailSender;
+        this.emailService = emailService;
+        this.senderService = senderService;
     }
 
+
     @Bean
-    public FlatFileItemReader<User> reader() {
-        FlatFileItemReader<User> reader = new FlatFileItemReader<>();
-        reader.setResource(new FileSystemResource(filePath));
-        reader.setName("Reader");
-        reader.setLinesToSkip(1);
-        reader.setLineMapper(lineMapper());
+    public JdbcCursorItemReader<UserDto> cursorItemReader(){
+        JdbcCursorItemReader<UserDto> reader = new JdbcCursorItemReader<>();
+        reader.setSql("SELECT email FROM medical_management_system.speciality;");
+        reader.setDataSource(dataSource);
+        reader.setFetchSize(100);
+        reader.setRowMapper(new EmailSenderMapper());
+
         return reader;
     }
 
-    private LineMapper<User> lineMapper() {
-        DefaultLineMapper<User> lineMapper = new DefaultLineMapper<>();
+    @Bean
+    public JdbcPagingItemReader<UserDto> pagingItemReader(){
+        JdbcPagingItemReader<UserDto> reader = new JdbcPagingItemReader<>();
+        reader.setDataSource(this.dataSource);
+        reader.setFetchSize(10);
+        reader.setRowMapper(new EmailSenderMapper());
 
-        DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
-        lineTokenizer.setDelimiter(",");
-        lineTokenizer.setStrict(false);
-        lineTokenizer.setNames("id","email", "fullName", "phoneNumber");
+        Map<String, Order> sortKeys = new HashMap<>();
+        sortKeys.put("id", Order.ASCENDING);
 
-        BeanWrapperFieldSetMapper<User> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
-        fieldSetMapper.setTargetType(User.class);
-        lineMapper.setLineTokenizer(lineTokenizer);
-        lineMapper.setFieldSetMapper(fieldSetMapper);
-        return lineMapper;
+        MySqlPagingQueryProvider queryProvider = new MySqlPagingQueryProvider();
+        queryProvider.setSelectClause("select id, email, fullName, phoneNumber");
+        queryProvider.setFromClause("from users");
+        queryProvider.setSortKeys(sortKeys);
+
+
+        reader.setQueryProvider(queryProvider);
+
+        return reader;
+    }
+
+    @Bean
+    public EmailItemProcessor processor() {
+        return new EmailItemProcessor(emailService);
+    }
+
+    @Bean
+    public EmailItemWriter writer() {
+        return  new EmailItemWriter(mailSender, senderService);
 
     }
 
     @Bean
-    public ItemProcessor<User, List<Appointment>> sendEmailItemProcessor() {
-        return sendEmailItemProcessor();
-    }
-
-    @Bean
-    public ItemWriter<List<Appointment>> SendEmailWriter() {
-
-        return SendEmailWriter();
-    }
-
-    @Bean
-    public ItemReader<User> emailReader() {
-        String sql = "SELECT email FROM users";
-        return new JdbcCursorItemReaderBuilder<User>()
-                .name("emailReader")
-                .sql(sql)
-                .dataSource(dataSource)
-                .rowMapper(new EmailSenderMapper())
-                .build();
-    }
-
-
-
-
-
-    @Bean
-    public Job emailSenderJob(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        return new JobBuilder("emailSenderJob", jobRepository)
-                .start(emailSenderStep(jobRepository, transactionManager))
+    public Step step1(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+        return new StepBuilder("email",jobRepository).
+                <UserDto,UserDto>chunk(10,transactionManager)
+                .reader(cursorItemReader())
+                .processor(processor())
+                .writer(writer())
+                .taskExecutor(taskExecutor())
                 .build();
     }
 
     @Bean
-    public Step emailSenderStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        return new
-                StepBuilder("emailSenderStep", jobRepository)
-                .<User, List<Appointment>>chunk(100, transactionManager)
-                .reader(emailReader())
-                .processor(sendEmailItemProcessor())
-                .reader(emailReader())
-                .writer(SendEmailWriter())
-                .build();
+    public Job runJob(JobRepository jobRepository,PlatformTransactionManager transactionManager) {
+        return new JobBuilder("email-sender",jobRepository)
+                .flow(step1(jobRepository,transactionManager)).end().build();
+
     }
-
-
 
     @Bean
     public TaskExecutor taskExecutor() {
