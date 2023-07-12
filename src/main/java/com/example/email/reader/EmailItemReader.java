@@ -1,47 +1,56 @@
-package com.example.email.reader;
+package com.example.email.reader;//package com.example.email.reader;//package com.example.email.reader;
 
 import com.example.email.dto.UserDto;
 import com.example.email.model.User;
 import com.example.email.model.UserRole;
 import com.example.email.repository.UserRepository;
-import com.example.email.services.EmailServiceImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.util.Iterator;
 import java.util.List;
 
+@Slf4j
 @Component
-public class EmailItemReader implements ItemReader<List<UserDto>> {
-    private Iterator<User> doctorIterator;
-    private final EmailServiceImpl senderService;
-
-
+public class EmailItemReader implements ItemReader<UserDto> {
+    private Iterator<UserDto> doctorIterator;
     private final UserRepository userRepository;
-//console
+
+    //console
     //print item
     @Autowired
-    public EmailItemReader(EmailServiceImpl senderService, UserRepository userRepository) {
-        this.senderService = senderService;
+    public EmailItemReader(UserRepository userRepository) {
+        log.info("--- Email Reader");
+
         this.userRepository = userRepository;
+        List<User> users = userRepository.findAll();
+        for (int i = 0; i < users.size(); i++) {
+            log.info(users.get(i).getEmail());
+        }
     }
 
     @Override
-    public List<UserDto> read() throws Exception {
-        senderService.sendSimpleMessage("romeisaaliu1@gmail.com","Ciao","Buon Pranzo!");
+    public UserDto read() {
+        log.info("--- Email Reader second");
 
         if (doctorIterator == null) {
-            List<User> doctors = userRepository.findByRolesUserRole(UserRole.DOCTOR, Sort.sort(ArrayStoreException.class)); // Implement this method in UserRepository
+            List<UserDto> doctors = userRepository.findByRolesUserRole(UserRole.DOCTOR); // Implement this method in UserRepository
             doctorIterator = doctors.iterator();
+
+            log.info("--- Email Reader third");
         }
 
         if (doctorIterator.hasNext()) {
-            return (List<UserDto>) doctorIterator.next();
+            log.info("Hello");
+            return doctorIterator.next();
+
 
         } else {
+            log.info("Joo");
             return null;
-        }//print the doctors
-    }//loggers
+        }
+    }
+
 }

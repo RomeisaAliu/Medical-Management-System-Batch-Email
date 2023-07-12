@@ -1,8 +1,8 @@
 package com.example.email.processor;
 
+import com.example.email.dto.EmailDto;
 import com.example.email.dto.UserDto;
-import com.example.email.services.EmailServiceImpl;
-import jakarta.mail.SendFailedException;
+import com.example.email.services.EmailService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,38 +10,25 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class EmailItemProcessor implements ItemProcessor<UserDto, UserDto> {
+public class EmailItemProcessor implements ItemProcessor<UserDto, EmailDto> {
 
-    private final EmailServiceImpl emailService;
+    private final EmailService emailService;
 
     @Autowired
-    public EmailItemProcessor(EmailServiceImpl emailSenderService) {
-        this.emailService = emailSenderService;
+    public EmailItemProcessor(EmailService emailService) {
+        this.emailService = emailService;
     }
 
-    @Override
-    public UserDto process(UserDto user) throws Exception {
-        log.debug("Processing user: {}", user.getEmail());
-
-        try {
-            String subject = "Your Appointments for the Next 24 Hours";
-            String content = "Hi " + user.getFullName() + ",\n\n" +
-                    "Here is a list of your appointments for the next 24 hours:\n\n" +
-                    "...\n\n" + // Add the list of appointments here
-                    "Regards";
-
-            emailService.sendSimpleMessage(user.getEmail(), subject, content);
-            log.debug("Email sent to '{}': Subject - '{}', Content - '{}'", user.getEmail(), subject, content);
-
-            user.setEmailSent(true);
-
-        } catch (SendFailedException e) {
-            log.debug("Failed to send email to '{}': {}", user.getEmail(), e.getMessage());
-        }
-
-
-        return user;
-    }
-
-
+@Override
+public EmailDto process(UserDto userDto)  {
+    log.debug("Processing user: {}", userDto.getEmail());
+    EmailDto emailDto = new EmailDto();
+    emailDto.setToEmail(userDto.getEmail());
+    emailDto.setSubject("Ferie");
+    emailDto.setBody("I have in 4 August day holiday");
+    emailService.sendSimpleMessage(emailDto);
+    log.debug("Email sent to '{}': Subject - '{}', Content - '{}'", emailDto.getToEmail(), emailDto.getSubject(), emailDto.getBody());
+    return emailDto;
 }
+}
+
