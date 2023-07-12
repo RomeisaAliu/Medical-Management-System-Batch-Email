@@ -38,6 +38,6 @@ public class User {
             joinColumns = { @JoinColumn(name = "user_id")},
             inverseJoinColumns = {@JoinColumn(name = "speciality_id")})
     private List<Speciality> specialities;
-    public void setEmailSent(boolean b) {
-    }
-   }
+
+
+}

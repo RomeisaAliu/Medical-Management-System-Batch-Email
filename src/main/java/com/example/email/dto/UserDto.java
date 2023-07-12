@@ -22,5 +22,4 @@ public class UserDto {
 
     private List<String> specialities;
 
-    private boolean emailSent;
 }
