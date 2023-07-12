@@ -1,21 +1,21 @@
 package com.example.email.config;
 
 
-import com.example.email.EmailSenderService;
+import com.example.email.dto.EmailDto;
 import com.example.email.dto.UserDto;
 import com.example.email.mapper.EmailSenderMapper;
 import com.example.email.processor.EmailItemProcessor;
-import com.example.email.services.EmailServiceImpl;
+import com.example.email.reader.EmailItemReader;
+import com.example.email.services.EmailService;
 import com.example.email.writer.EmailItemWriter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
-import org.springframework.batch.item.database.JdbcPagingItemReader;
-import org.springframework.batch.item.database.Order;
-import org.springframework.batch.item.database.support.MySqlPagingQueryProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -26,30 +26,34 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
-import java.util.Map;
 
+@Slf4j
 @Configuration
 @EnableJpaRepositories(basePackages = "com.example.email.repository")
 @ComponentScan(basePackages = "com.example.email")
+@EnableBatchProcessing
 public class BatchConfig {
     private final DataSource dataSource;
-    private final EmailServiceImpl emailService;
-    private final EmailSenderService senderService;
+    private final EmailService emailService;
+    private final EmailItemWriter emailItemWriter;
+    private final EmailItemProcessor emailItemProcessor;
+    private final EmailItemReader emailItemReader;
 
     @Autowired
-    public BatchConfig(DataSource dataSource, EmailServiceImpl emailService, EmailSenderService senderService) {
+    public BatchConfig(DataSource dataSource, EmailService emailService, EmailItemWriter emailItemWriter, EmailItemProcessor emailItemProcessor, EmailItemReader emailItemReader) {
         this.dataSource = dataSource;
-
         this.emailService = emailService;
-        this.senderService = senderService;
+        this.emailItemWriter = emailItemWriter;
+        this.emailItemProcessor = emailItemProcessor;
+        this.emailItemReader = emailItemReader;
     }
 
 
     @Bean
-    public JdbcCursorItemReader<UserDto> cursorItemReader(){
+    public JdbcCursorItemReader<UserDto> cursorItemReader() {
+        log.info("Before cursorItemReader");
         JdbcCursorItemReader<UserDto> reader = new JdbcCursorItemReader<>();
-        reader.setSql("SELECT email FROM medical_management_system.speciality;");
+        reader.setSql("SELECT u.email FROM users u JOIN user_role ur ON u.id = ur.user_id JOIN role r ON ur.role_id = r.id WHERE r.roles = 'DOCTOR'");
         reader.setDataSource(dataSource);
         reader.setFetchSize(100);
         reader.setRowMapper(new EmailSenderMapper());
@@ -57,58 +61,51 @@ public class BatchConfig {
         return reader;
     }
 
-    @Bean
-    public JdbcPagingItemReader<UserDto> pagingItemReader(){
-        JdbcPagingItemReader<UserDto> reader = new JdbcPagingItemReader<>();
-        reader.setDataSource(this.dataSource);
-        reader.setFetchSize(10);
-        reader.setRowMapper(new EmailSenderMapper());
-
-        Map<String, Order> sortKeys = new HashMap<>();
-        sortKeys.put("id", Order.ASCENDING);
-
-        MySqlPagingQueryProvider queryProvider = new MySqlPagingQueryProvider();
-        queryProvider.setSelectClause("select id, email, fullName, phoneNumber");
-        queryProvider.setFromClause("from users");
-        queryProvider.setSortKeys(sortKeys);
-
-
-        reader.setQueryProvider(queryProvider);
-
-        return reader;
-    }
 
     @Bean
     public EmailItemProcessor processor() {
-        return new EmailItemProcessor(emailService);
+        log.info("Before EmailItemProcessor");
+        return emailItemProcessor;
     }
 
     @Bean
     public EmailItemWriter writer() {
-        return  new EmailItemWriter( senderService);
+        log.info("Before EmailItemWriter");
+        return emailItemWriter;
 
     }
 
     @Bean
-    public Step step1(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        return new StepBuilder("email",jobRepository).
-                <UserDto,UserDto>chunk(10,transactionManager)
+    public EmailItemReader read() {
+        log.info("Before read");
+        return emailItemReader;
+    }
+
+
+    @Bean
+    public Step emailStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+        log.info("Before emailStep");
+        return new StepBuilder("emailStep", jobRepository)
+                .<UserDto, EmailDto>chunk(10, transactionManager)
                 .reader(cursorItemReader())
-                .processor(processor())
+                .processor(new EmailItemProcessor(emailService))
                 .writer(writer())
                 .taskExecutor(taskExecutor())
+                .startLimit(1)
                 .build();
     }
 
     @Bean
-    public Job runJob(JobRepository jobRepository,PlatformTransactionManager transactionManager) {
-        return new JobBuilder("email-sender",jobRepository)
-                .flow(step1(jobRepository,transactionManager)).end().build();
+    public Job runJob(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+        return new JobBuilder("email-sender", jobRepository)
+                .flow(emailStep(jobRepository, transactionManager)).end().build();
 
     }
 
+
     @Bean
     public TaskExecutor taskExecutor() {
+        log.info("Before taskExecutor");
         SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
         asyncTaskExecutor.setConcurrencyLimit(10);
         return asyncTaskExecutor;
