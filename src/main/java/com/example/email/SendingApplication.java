@@ -1,20 +1,34 @@
 package com.example.email;
 
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.context.ConfigurableApplicationContext;
 
 @SpringBootApplication
-@EnableBatchProcessing
-@EnableTransactionManagement
-@EnableJpaRepositories
 public class SendingApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(SendingApplication.class, args);
+
+		ConfigurableApplicationContext context = SpringApplication.run(SendingApplication.class, args);
+
+
+		JobLauncher jobLauncher = context.getBean(JobLauncher.class);
+		Job job = context.getBean(Job.class);
+
+		try {
+			JobParameters jobParameters = new JobParametersBuilder()
+					.addLong("timestamp", System.currentTimeMillis())
+					.toJobParameters();
+
+			jobLauncher.run(job, jobParameters);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		context.close();
 	}
-
-
 }
