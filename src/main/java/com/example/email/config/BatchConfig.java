@@ -1,114 +1,147 @@
 package com.example.email.config;
-
-
-import com.example.email.dto.EmailDto;
-import com.example.email.dto.UserDto;
-import com.example.email.mapper.EmailSenderMapper;
-import com.example.email.processor.EmailItemProcessor;
-import com.example.email.reader.EmailItemReader;
-import com.example.email.services.EmailService;
-import com.example.email.writer.EmailItemWriter;
-import lombok.extern.slf4j.Slf4j;
+import com.example.medicalmanagement.dto.UserDto;
+import com.example.medicalmanagement.model.User;
+import com.example.medicalmanagement.repository.AppointmentRepository;
+import com.example.medicalmanagement.repository.UserRepository;
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.support.IteratorItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.sql.DataSource;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
-@Slf4j
+
 @Configuration
-@EnableJpaRepositories(basePackages = "com.example.email.repository")
-@ComponentScan(basePackages = "com.example.email")
+@EnableJpaRepositories(basePackages = "com.example.medicalmanagement.repository")
+@ComponentScan(basePackages = "com.example.medicalmanagement")
 @EnableBatchProcessing
 public class BatchConfig {
-    private final DataSource dataSource;
-    private final EmailService emailService;
-    private final EmailItemWriter emailItemWriter;
-    private final EmailItemProcessor emailItemProcessor;
-    private final EmailItemReader emailItemReader;
 
+
+    @Value("${spring.mail.username}")
+    private String username;
+    @Value("${spring.mail.password}")
+    private String password;
+    @Value("${spring.mail.host}")
+    private String host;
+    @Value("${spring.mail.port}")
+    private int port;
+
+
+    private final Logger logger = LoggerFactory.getLogger(BatchConfig.class);
+
+    List<User> doctorEmails = new ArrayList<>();
     @Autowired
-    public BatchConfig(DataSource dataSource, EmailService emailService, EmailItemWriter emailItemWriter, EmailItemProcessor emailItemProcessor, EmailItemReader emailItemReader) {
-        this.dataSource = dataSource;
-        this.emailService = emailService;
-        this.emailItemWriter = emailItemWriter;
-        this.emailItemProcessor = emailItemProcessor;
-        this.emailItemReader = emailItemReader;
-    }
+    private final AppointmentRepository appointmentRepository;
 
-
-    @Bean
-    public JdbcCursorItemReader<UserDto> cursorItemReader() {
-        log.info("Before cursorItemReader");
-        JdbcCursorItemReader<UserDto> reader = new JdbcCursorItemReader<>();
-        reader.setSql("SELECT u.email FROM users u JOIN user_role ur ON u.id = ur.user_id JOIN role r ON ur.role_id = r.id WHERE r.roles = 'DOCTOR'");
-        reader.setDataSource(dataSource);
-        reader.setFetchSize(100);
-        reader.setRowMapper(new EmailSenderMapper());
-
-        return reader;
-    }
-
-
-    @Bean
-    public EmailItemProcessor processor() {
-        log.info("Before EmailItemProcessor");
-        return emailItemProcessor;
+    public BatchConfig( AppointmentRepository appointmentRepository) {
+        this.appointmentRepository = appointmentRepository;
     }
 
     @Bean
-    public EmailItemWriter writer() {
-        log.info("Before EmailItemWriter");
-        return emailItemWriter;
-
+    public ItemReader<User> emailReader(UserRepository userRepository) {
+        this.doctorEmails = userRepository.findDoctors();
+        return new IteratorItemReader<>(doctorEmails.iterator());
     }
 
     @Bean
-    public EmailItemReader read() {
-        log.info("Before read");
-        return emailItemReader;
-    }
-
-
-    @Bean
-    public Step emailStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        log.info("Before emailStep");
-        return new StepBuilder("emailStep", jobRepository)
-                .<UserDto, EmailDto>chunk(10, transactionManager)
-                .reader(cursorItemReader())
-                .processor(new EmailItemProcessor(emailService))
-                .writer(writer())
-                .taskExecutor(taskExecutor())
-                .startLimit(1)
+    public Step step(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager,
+                     ItemReader<UserDto> myReader, ItemProcessor<UserDto, UserDto> myProcessor,
+                     ItemWriter<UserDto> myWriter) {
+        return new StepBuilder("step", jobRepository)
+                .<UserDto, UserDto>chunk(10, platformTransactionManager)
+                .reader(myReader)
+                .processor(myProcessor)
+                .writer(myWriter)
                 .build();
     }
 
     @Bean
-    public Job runJob(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        return new JobBuilder("email-sender", jobRepository)
-                .flow(emailStep(jobRepository, transactionManager)).end().build();
-
+    public Job job(Step step, JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
+        return new JobBuilder("job", jobRepository)
+                .incrementer(new RunIdIncrementer())
+                .flow(step)
+                .end()
+                .build();
     }
-
 
     @Bean
-    public TaskExecutor taskExecutor() {
-        log.info("Before taskExecutor");
-        SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
-        asyncTaskExecutor.setConcurrencyLimit(10);
-        return asyncTaskExecutor;
+    public ItemProcessor<UserDto, UserDto> itemProcessor() {
+        return userDto -> {
+            logger.info("Processing item: {}", userDto.getEmail());
+            String message = "Hi " + userDto.getFullName() +
+                    "\nHere are you next appointments:\n";
+            message = message + "*" + appointmentRepository.findNext24HoursAppointments(userDto.getId(), LocalDateTime.now(), LocalDateTime.now().plusHours(24))
+                    + "\n\nRegards, The Best Online Medical Center";
+
+            sendEmail(userDto.getEmail(),message);
+            userDto.setEmailSent(true);
+            return userDto;
+        };
     }
 
+    @Bean
+    public ItemWriter<UserDto> itemWriter() {
+        return items -> {
+            logger.info("Sending emails...");
+            logger.info("Emails sent successfully.");
+        };
+    }
+
+    private void sendEmail(String email, String message) {
+
+        Properties properties = new Properties();
+        properties.put("mail.smtp.auth", "true");
+        properties.put("mail.smtp.starttls.enable", "true");
+        properties.put("mail.smtp.host", host);
+        properties.put("mail.smtp.port", port);
+
+        Session session = Session.getInstance(properties, new Authenticator() {
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(username, password);
+            }
+        });
+
+        try {
+            MimeMessage mimeMessage = new MimeMessage(session);
+
+            mimeMessage.setFrom(new InternetAddress(username));
+
+            mimeMessage.setRecipient(Message.RecipientType.TO, new InternetAddress(email));
+
+            mimeMessage.setSubject("Appointments for " + LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+
+            mimeMessage.setText(message);
+            Transport.send(mimeMessage);
+
+            logger.info("Email sent successfully to: {}", email);
+        } catch (MessagingException e) {
+            logger.error("Error sending email to: {}", email, e);
+        }
+    }
 }
+
