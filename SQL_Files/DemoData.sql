@@ -72,9 +72,9 @@ INSERT INTO `medical_management_system`.`user_role` (`user_id`, `role_id`) VALUE
 
 
 #Insert into speciality
-INSERT INTO `medical_management_system`.`speciality` (`email`,`name`) VALUES ('kleaprifti21@gmail.com','General');
-INSERT INTO `medical_management_system`.`speciality` (`email`,`name`) VALUES ('10aromeisaaliu@gmail.com','Pediatrican');
-INSERT INTO `medical_management_system`.`speciality` (`email`,`name`) VALUES ('romeisaaliu1@gmail.com','Cardiology');
+INSERT INTO `medical_management_system`.`speciality` (`name`) VALUES ('General');
+INSERT INTO `medical_management_system`.`speciality` (`name`) VALUES ('Pediatrican');
+INSERT INTO `medical_management_system`.`speciality` (`name`) VALUES ('Cardiology');
 
 
 #Insert into user_speciality
@@ -92,8 +92,8 @@ INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_ti
 INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-20 12:00:00', '2023-07-20 11:00:00', (SELECT id FROM users WHERE full_name='Charles Leclerc') ,(SELECT id FROM users WHERE phone_number = '8348923612'));
 INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-20 14:00:00', '2023-07-20 13:00:00', (SELECT id FROM users WHERE full_name='Charles Leclerc') ,(SELECT id FROM users WHERE phone_number = '92362184'));
 INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-20 16:00:00', '2023-07-20 15:00:00', (SELECT id FROM users WHERE full_name='Gregory House') ,(SELECT id FROM users WHERE phone_number = '547423093'));
-INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-19 18:00:00', '2023-07-19 17:00:00', (SELECT id FROM users WHERE full_name='Gregory House') ,(SELECT id FROM users WHERE phone_number = '003834252'));
+INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-21 18:00:00', '2023-07-21 17:00:00', (SELECT id FROM users WHERE full_name='Gregory House') ,(SELECT id FROM users WHERE phone_number = '003834252'));
 INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-20 11:30:00', '2023-07-20 10:30:00', (SELECT id FROM users WHERE full_name='Gregory House') ,(SELECT id FROM users WHERE phone_number = '57239145'));
 INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-20 12:45:00', '2023-07-20 11:45:00', (SELECT id FROM users WHERE full_name='Stephen Strange') ,(SELECT id FROM users WHERE phone_number = '93482663'));
-INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-19 13:10:00', '2023-07-19 12:10:00', (SELECT id FROM users WHERE full_name='Stephen Strange') ,(SELECT id FROM users WHERE phone_number = '3627183'));
+INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-21 13:10:00', '2023-07-21 12:10:00', (SELECT id FROM users WHERE full_name='Stephen Strange') ,(SELECT id FROM users WHERE phone_number = '3627183'));
 INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-20 16:00:00', '2023-07-20 15:00:00', (SELECT id FROM users WHERE full_name='Stephen Strange') ,(SELECT id FROM users WHERE phone_number = '57355253'));
