@@ -3,15 +3,16 @@ import com.example.medicalmanagement.dto.UserDto;
 import com.example.medicalmanagement.model.Role;
 import com.example.medicalmanagement.model.Speciality;
 import com.example.medicalmanagement.model.User;
+import com.example.medicalmanagement.model.UserRole;
 import com.example.medicalmanagement.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemReader;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class myReader implements ItemReader<UserDto> {
@@ -29,10 +30,11 @@ public class myReader implements ItemReader<UserDto> {
     @Override
     public UserDto read() {
         if (userDtoIterator == null) {
-            List<User> doctors = userRepository.findDoctors();
+            Sort sort = Sort.by(Sort.Direction.ASC, "fullName");
+            List<User> doctors = userRepository.findByRolesUserRole(UserRole.DOCTOR,sort);
             List<UserDto> doctorDtos = doctors.stream()
                     .map(this::convertToDto)
-                    .collect(Collectors.toList());
+                    .toList();
             userDtoIterator = doctorDtos.iterator();
         }
 
@@ -50,10 +52,10 @@ public class myReader implements ItemReader<UserDto> {
         userDto.setFullName(doctor.getFullName());
         userDto.setRoles(doctor.getRoles().stream()
                 .map(Role::getUserRole)
-                .collect(Collectors.toList()));
+                .toList());
         userDto.setSpecialities(doctor.getSpecialities().stream()
                 .map(Speciality::getName)
-                .collect(Collectors.toList()));
+                .toList());
         return userDto;
     }
 }

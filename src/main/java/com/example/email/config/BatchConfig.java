@@ -1,6 +1,8 @@
 package com.example.email.config;
 import com.example.medicalmanagement.dto.UserDto;
+import com.example.medicalmanagement.model.Appointment;
 import com.example.medicalmanagement.model.User;
+import com.example.medicalmanagement.model.UserRole;
 import com.example.medicalmanagement.repository.AppointmentRepository;
 import com.example.medicalmanagement.repository.UserRepository;
 import jakarta.mail.*;
@@ -24,6 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -64,7 +67,8 @@ public class BatchConfig {
 
     @Bean
     public ItemReader<User> emailReader(UserRepository userRepository) {
-        this.doctorEmails = userRepository.findDoctors();
+        Sort sort = Sort.by(Sort.Direction.ASC, "fullName");
+        this.doctorEmails = userRepository.findByRolesUserRole(UserRole.DOCTOR,sort);
         return new IteratorItemReader<>(doctorEmails.iterator());
     }
 
@@ -93,12 +97,21 @@ public class BatchConfig {
     public ItemProcessor<UserDto, UserDto> itemProcessor() {
         return userDto -> {
             logger.info("Processing item: {}", userDto.getEmail());
-            String message = "Hi " + userDto.getFullName() +
-                    "\nHere are you next appointments:\n";
-            message = message + "*" + appointmentRepository.findNext24HoursAppointments(userDto.getId(), LocalDateTime.now(), LocalDateTime.now().plusHours(24))
-                    + "\n\nRegards, The Best Online Medical Center";
 
-            sendEmail(userDto.getEmail(),message);
+            List<Appointment> nextAppointments = appointmentRepository.findNext24HoursAppointments(userDto.getId(), LocalDateTime.now(), LocalDateTime.now().plusHours(24));
+            String message = "Hi " + userDto.getFullName() + ",\n";
+
+            if (nextAppointments.isEmpty()) {
+                message += "You have no appointments in the next 24 hours.\n\n";
+            } else {
+                message += "\nHere are you next appointments:\n";
+                message += "*" + appointmentRepository.findNext24HoursAppointments(userDto.getId(), LocalDateTime.now(), LocalDateTime.now().plusHours(24));
+            }
+
+
+            message += "\nRegards, The Best Online Medical Center";
+
+            sendEmail(userDto.getEmail(), message);
             userDto.setEmailSent(true);
             return userDto;
         };
@@ -144,4 +157,3 @@ public class BatchConfig {
         }
     }
 }
-
