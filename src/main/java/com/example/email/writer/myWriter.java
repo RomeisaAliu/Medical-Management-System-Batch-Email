@@ -8,7 +8,11 @@ import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 
 public class myWriter implements ItemWriter<UserDto> {
-    private final Logger logger = LoggerFactory.getLogger(myWriter.class);
+    private Logger logger = LoggerFactory.getLogger(myWriter.class);
+
+    public myWriter(Logger logger) {
+        this.logger = logger;
+    }
 
     @Override
     public void write(Chunk<? extends UserDto> chunk) throws Exception {
