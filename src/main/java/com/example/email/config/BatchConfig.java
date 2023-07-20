@@ -1,13 +1,11 @@
 package com.example.email.config;
+
+import com.example.email.service.MessageService;
+import com.example.email.service.SendService;
 import com.example.medicalmanagement.dto.UserDto;
-import com.example.medicalmanagement.model.Appointment;
 import com.example.medicalmanagement.model.User;
 import com.example.medicalmanagement.model.UserRole;
-import com.example.medicalmanagement.repository.AppointmentRepository;
 import com.example.medicalmanagement.repository.UserRepository;
-import jakarta.mail.*;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -22,7 +20,6 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.support.IteratorItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -30,12 +27,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 
 @Configuration
@@ -44,25 +37,16 @@ import java.util.Properties;
 @EnableBatchProcessing
 public class BatchConfig {
 
-
-    @Value("${spring.mail.username}")
-    private String username;
-    @Value("${spring.mail.password}")
-    private String password;
-    @Value("${spring.mail.host}")
-    private String host;
-    @Value("${spring.mail.port}")
-    private int port;
-
-
     private final Logger logger = LoggerFactory.getLogger(BatchConfig.class);
 
     List<User> doctorEmails = new ArrayList<>();
-    @Autowired
-    private final AppointmentRepository appointmentRepository;
+    private final MessageService messageService;
+    private final SendService sendService;
 
-    public BatchConfig( AppointmentRepository appointmentRepository) {
-        this.appointmentRepository = appointmentRepository;
+    @Autowired
+    public BatchConfig(MessageService messageService, SendService sendService) {
+        this.messageService = messageService;
+        this.sendService = sendService;
     }
 
     @Bean
@@ -85,33 +69,18 @@ public class BatchConfig {
     }
 
     @Bean
-    public Job job(Step step, JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
+    public Job job(Step step, JobRepository jobRepository) {
         return new JobBuilder("job", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .flow(step)
                 .end()
                 .build();
     }
-
     @Bean
     public ItemProcessor<UserDto, UserDto> itemProcessor() {
         return userDto -> {
-            logger.info("Processing item: {}", userDto.getEmail());
-
-            List<Appointment> nextAppointments = appointmentRepository.findNext24HoursAppointments(userDto.getId(), LocalDateTime.now(), LocalDateTime.now().plusHours(24));
-            String message = "Hi " + userDto.getFullName() + ",\n";
-
-            if (nextAppointments.isEmpty()) {
-                message += "You have no appointments in the next 24 hours.\n\n";
-            } else {
-                message += "\nHere are you next appointments:\n";
-                message += "*" + appointmentRepository.findNext24HoursAppointments(userDto.getId(), LocalDateTime.now(), LocalDateTime.now().plusHours(24));
-            }
-
-
-            message += "\nRegards, The Best Online Medical Center";
-
-            sendEmail(userDto.getEmail(), message);
+            String emailMessage = messageService.generateEmailMessage(userDto);
+            sendService.sendEmail(userDto.getEmail(), emailMessage);
             userDto.setEmailSent(true);
             return userDto;
         };
@@ -125,35 +94,4 @@ public class BatchConfig {
         };
     }
 
-    private void sendEmail(String email, String message) {
-
-        Properties properties = new Properties();
-        properties.put("mail.smtp.auth", "true");
-        properties.put("mail.smtp.starttls.enable", "true");
-        properties.put("mail.smtp.host", host);
-        properties.put("mail.smtp.port", port);
-
-        Session session = Session.getInstance(properties, new Authenticator() {
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(username, password);
-            }
-        });
-
-        try {
-            MimeMessage mimeMessage = new MimeMessage(session);
-
-            mimeMessage.setFrom(new InternetAddress(username));
-
-            mimeMessage.setRecipient(Message.RecipientType.TO, new InternetAddress(email));
-
-            mimeMessage.setSubject("Appointments for " + LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-
-            mimeMessage.setText(message);
-            Transport.send(mimeMessage);
-
-            logger.info("Email sent successfully to: {}", email);
-        } catch (MessagingException e) {
-            logger.error("Error sending email to: {}", email, e);
-        }
-    }
 }

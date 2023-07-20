@@ -10,23 +10,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
-
 import java.util.Iterator;
 import java.util.List;
-
 @Component
-public class myReader implements ItemReader<UserDto> {
-
+public class Reader implements ItemReader<UserDto> {
     private final UserRepository userRepository;
-    private final Logger logger = LoggerFactory.getLogger(myReader.class);
     private Iterator<UserDto> userDtoIterator;
-
-    public myReader(UserRepository userRepository) {
+    public Reader(UserRepository userRepository) {
         this.userRepository = userRepository;
+        Logger logger = LoggerFactory.getLogger(Reader.class);
         logger.info("reading...");
     }
-
-
     @Override
     public UserDto read() {
         if (userDtoIterator == null) {
@@ -37,14 +31,12 @@ public class myReader implements ItemReader<UserDto> {
                     .toList();
             userDtoIterator = doctorDtos.iterator();
         }
-
         if (userDtoIterator.hasNext()) {
             return userDtoIterator.next();
         } else {
             return null;
         }
     }
-
     private UserDto convertToDto(User doctor) {
         UserDto userDto = new UserDto();
         userDto.setId(doctor.getId());
