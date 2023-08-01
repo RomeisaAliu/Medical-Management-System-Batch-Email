@@ -77,10 +77,11 @@ public class BatchConfig {
                 .build();
     }
     @Bean
-    public ItemProcessor<UserDto, UserDto> itemProcessor() {
+    public ItemProcessor<UserDto, UserDto> itemProcessor(MessageService messageService) {
         return userDto -> {
             String emailMessage = messageService.generateEmailMessage(userDto);
             sendService.sendEmail(userDto.getEmail(), emailMessage);
+            messageService.sendNotification(userDto, emailMessage);
             userDto.setEmailSent(true);
             return userDto;
         };
@@ -93,5 +94,6 @@ public class BatchConfig {
             logger.info("Emails sent successfully.");
         };
     }
+
 
 }
