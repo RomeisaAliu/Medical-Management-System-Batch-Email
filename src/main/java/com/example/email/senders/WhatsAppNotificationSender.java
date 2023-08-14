@@ -1,7 +1,5 @@
-package com.example.email.Senders;
+package com.example.email.senders;
 
-import com.example.email.service.MessageService;
-import com.example.medicalmanagement.model.NotificationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,8 +8,7 @@ public class WhatsAppNotificationSender implements NotificationSenderStrategy {
 
 
     @Override
-    public void sendNotification(String doctorEmail, String message, NotificationType type) {
+    public void sendNotification(String doctorEmail, String message) {
         logger.info("Message sent via WhatsApp to: {}", doctorEmail);
-
     }
 }

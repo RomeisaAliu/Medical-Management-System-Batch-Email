@@ -1,6 +1,5 @@
-package com.example.email.Senders;
+package com.example.email.senders;
 
-import com.example.medicalmanagement.model.NotificationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,8 +7,7 @@ public class SlackNotificationSender implements NotificationSenderStrategy {
     private final Logger logger = LoggerFactory.getLogger(SlackNotificationSender.class);
 
     @Override
-    public void sendNotification(String doctorEmail, String message, NotificationType type) {
+    public void sendNotification(String doctorEmail, String message) {
         logger.info("Message sent via Slack to: {}", doctorEmail);
-
     }
 }

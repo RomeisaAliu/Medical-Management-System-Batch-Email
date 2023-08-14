@@ -1,29 +1,35 @@
 package com.example.email.service;
 
 import com.example.medicalmanagement.dto.UserDto;
-import com.example.medicalmanagement.model.Appointment;
-import com.example.medicalmanagement.model.NotificationType;
-import com.example.medicalmanagement.model.UserRole;
+import com.example.medicalmanagement.model.*;
 import com.example.medicalmanagement.repository.AppointmentRepository;
+import com.example.medicalmanagement.repository.UserRepository;
+import com.example.medicalmanagement.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class MessageService {
-private SendService sendService;
+    private final UserRepository userRepository;
+    private final UserService userService;
+    private SendService sendService;
     private final AppointmentRepository appointmentRepository;
     private final Logger logger = LoggerFactory.getLogger(MessageService.class);
 
 
     @Autowired
-    public MessageService(AppointmentRepository appointmentRepository,SendService sendService) {
+    public MessageService(UserRepository userRepository, UserService userService, AppointmentRepository appointmentRepository, SendService sendService) {
+        this.userRepository = userRepository;
+        this.userService = userService;
         this.appointmentRepository = appointmentRepository;
-        this.sendService=sendService;
+        this.sendService = sendService;
     }
 
 
@@ -51,27 +57,24 @@ private SendService sendService;
     }
 
 
-    public void sendNotification(UserDto userDto, String message) {
-        NotificationType notificationType = getNotificationType(userDto.getNotificationTypes());
-        if (notificationType != null) {
-            sendService.sendNotification(userDto.getEmail(), message, notificationType);
-            userDto.setEmailSent(true);
-            logger.info("Notification sent via {} to: {}", notificationType.name(), userDto.getEmail());
-        } else {
-            logger.warn("Unsupported notification preference for doctor: {}", userDto.getFullName());
+    public void sendNotification(String message) {
+        Sort sort = Sort.by(Sort.Order.asc("fullName"));
+        List<User> users = userRepository.findByRolesUserRole(UserRole.DOCTOR, sort);
+        List<UserDto> userDtos = new ArrayList<>();
+        for (User user : users) {
+            UserDto userDto = userService.mapToDto(user);
+            userDtos.add(userDto);
+        }
+        for (UserDto userDto : userDtos) {
+            List<NotificationType> notificationTypes = userDto.getNotificationTypes();
+
+            if (notificationTypes != null || !notificationTypes.isEmpty()) {
+                sendService.sendNotification(userDto.getEmail(), message,userDto);
+                userDto.setEmailSent(true);
+            } else {
+                logger.warn("Unsupported notification preference for doctor: {}", userDto.getFullName());
+            }
+
         }
     }
-
-    private NotificationType getNotificationType(List<NotificationType> notificationTypes) {
-        if (notificationTypes == null || notificationTypes.isEmpty()) {
-            return null;
-        }
-        return notificationTypes.get(0); // Assuming only one notification type is allowed per user
-    }
-
-
-
-
-
-
 }
