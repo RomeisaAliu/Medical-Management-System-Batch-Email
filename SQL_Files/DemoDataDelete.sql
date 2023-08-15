@@ -8,7 +8,8 @@ DELETE FROM user_role;
 DELETE FROM `users`;
 DELETE FROM `speciality`;
 DELETE FROM `role`;
-
+DELETE FROM `user_notification_mapping`;
+DELETE FROM `user_notification_type`;
 
 
 

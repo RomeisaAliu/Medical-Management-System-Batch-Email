@@ -97,3 +97,17 @@ INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_ti
 INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-20 12:45:00', '2023-07-20 11:45:00', (SELECT id FROM users WHERE full_name='Stephen Strange') ,(SELECT id FROM users WHERE phone_number = '93482663'));
 INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-21 13:10:00', '2023-07-21 12:10:00', (SELECT id FROM users WHERE full_name='Stephen Strange') ,(SELECT id FROM users WHERE phone_number = '3627183'));
 INSERT INTO `medical_management_system`.`appointments` (`appointment_date_end_time`, `appointment_date_start_time`, `doctor_id`, `patient_id`) VALUES ('2023-07-20 16:00:00', '2023-07-20 15:00:00', (SELECT id FROM users WHERE full_name='Stephen Strange') ,(SELECT id FROM users WHERE phone_number = '57355253'));
+
+#Isert into Notification Type
+INSERT INTO `medical_management_system`.`user_notification_type` (`notification_type`) VALUES ('WHATSAPP');
+INSERT INTO `medical_management_system`.`user_notification_type` (`notification_type`) VALUES ('EMAIL');
+INSERT INTO `medical_management_system`.`user_notification_type` (`notification_type`) VALUES ('SLACK');
+
+
+# Map User notification preference to user
+
+INSERT INTO `medical_management_system`.`user_notification_mapping` (`user_id`, `notification_id`) VALUES ((SELECT id FROM users WHERE full_name='Charles Leclerc'),(SELECT notification_id FROM user_notification_type WHERE notification_type = 'WHATSAPP'));
+INSERT INTO `medical_management_system`.`user_notification_mapping` (`user_id`, `notification_id`) VALUES ((SELECT id FROM users WHERE full_name='Charles Leclerc'),(SELECT notification_id FROM user_notification_type WHERE notification_type = 'EMAIL'));
+INSERT INTO `medical_management_system`.`user_notification_mapping` (`user_id`, `notification_id`) VALUES ((SELECT id FROM users WHERE full_name='Gregory House'),(SELECT notification_id FROM user_notification_type WHERE notification_type = 'EMAIL'));
+INSERT INTO `medical_management_system`.`user_notification_mapping` (`user_id`, `notification_id`) VALUES ((SELECT id FROM users WHERE full_name='Stephen Strange'),(SELECT notification_id FROM user_notification_type WHERE notification_type = 'SLACK'));
+INSERT INTO `medical_management_system`.`user_notification_mapping` (`user_id`, `notification_id`) VALUES ((SELECT id FROM users WHERE full_name='Stephen Strange'),(SELECT notification_id FROM user_notification_type WHERE notification_type = 'EMAIL'));

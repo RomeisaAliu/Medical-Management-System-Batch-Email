@@ -86,6 +86,4 @@ public class BatchConfig {
             logger.info("Emails sent successfully.");
         };
     }
-
-
 }
