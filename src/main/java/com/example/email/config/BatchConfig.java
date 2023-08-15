@@ -1,7 +1,6 @@
 package com.example.email.config;
 
 import com.example.email.service.MessageService;
-import com.example.email.service.SendService;
 import com.example.medicalmanagement.dto.UserDto;
 import com.example.medicalmanagement.model.User;
 import com.example.medicalmanagement.model.UserRole;
@@ -40,19 +39,12 @@ public class BatchConfig {
     private final Logger logger = LoggerFactory.getLogger(BatchConfig.class);
 
     List<User> doctorEmails = new ArrayList<>();
-    private final MessageService messageService;
-    private final SendService sendService;
 
-    @Autowired
-    public BatchConfig(MessageService messageService, SendService sendService) {
-        this.messageService = messageService;
-        this.sendService = sendService;
-    }
 
     @Bean
     public ItemReader<User> emailReader(UserRepository userRepository) {
         Sort sort = Sort.by(Sort.Direction.ASC, "fullName");
-        this.doctorEmails = userRepository.findByRolesUserRole(UserRole.DOCTOR,sort);
+        this.doctorEmails = userRepository.findByRolesUserRole(UserRole.DOCTOR, sort);
         return new IteratorItemReader<>(doctorEmails.iterator());
     }
 
@@ -76,11 +68,12 @@ public class BatchConfig {
                 .end()
                 .build();
     }
+
     @Bean
-    public ItemProcessor<UserDto, UserDto> itemProcessor() {
+    public ItemProcessor<UserDto, UserDto> itemProcessor(MessageService messageService) {
         return userDto -> {
             String emailMessage = messageService.generateEmailMessage(userDto);
-            sendService.sendEmail(userDto.getEmail(), emailMessage);
+            messageService.sendNotification(userDto, emailMessage);
             userDto.setEmailSent(true);
             return userDto;
         };
@@ -93,5 +86,4 @@ public class BatchConfig {
             logger.info("Emails sent successfully.");
         };
     }
-
 }

@@ -1,9 +1,13 @@
 package com.example.email.service;
 
 import com.example.medicalmanagement.dto.UserDto;
-import com.example.medicalmanagement.model.Appointment;
+import com.example.medicalmanagement.model.*;
 import com.example.medicalmanagement.repository.AppointmentRepository;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -12,11 +16,15 @@ import java.util.List;
 @Service
 public class MessageService {
 
+    private SendService sendService;
     private final AppointmentRepository appointmentRepository;
+    private final Logger logger = LoggerFactory.getLogger(MessageService.class);
+
 
     @Autowired
-    public MessageService(AppointmentRepository appointmentRepository) {
+    public MessageService(AppointmentRepository appointmentRepository, SendService sendService) {
         this.appointmentRepository = appointmentRepository;
+        this.sendService = sendService;
     }
 
 
@@ -41,5 +49,16 @@ public class MessageService {
         message.append("\nRegards, The Best Online Medical Center");
 
         return message.toString();
+    }
+
+
+    public void sendNotification(UserDto userDto, String message) {
+
+        if (userDto.getNotificationTypes() != null || !userDto.getNotificationTypes().isEmpty()) {
+            sendService.sendNotification(userDto.getEmail(), message, userDto);
+            userDto.setEmailSent(true);
+        } else {
+            logger.warn("Unsupported notification preference for doctor: {}", userDto.getFullName());
+        }
     }
 }
