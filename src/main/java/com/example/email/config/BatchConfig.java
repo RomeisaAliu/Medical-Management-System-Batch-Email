@@ -41,7 +41,6 @@ public class BatchConfig {
     List<User> doctorEmails = new ArrayList<>();
 
 
-
     @Bean
     public ItemReader<User> emailReader(UserRepository userRepository) {
         Sort sort = Sort.by(Sort.Direction.ASC, "fullName");
@@ -74,7 +73,7 @@ public class BatchConfig {
     public ItemProcessor<UserDto, UserDto> itemProcessor(MessageService messageService) {
         return userDto -> {
             String emailMessage = messageService.generateEmailMessage(userDto);
-            messageService.sendNotification(userDto,emailMessage);
+            messageService.sendNotification(userDto, emailMessage);
             userDto.setEmailSent(true);
             return userDto;
         };
