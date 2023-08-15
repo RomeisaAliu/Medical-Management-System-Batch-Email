@@ -1,15 +1,13 @@
 package com.example.email.reader;
 import com.example.medicalmanagement.dto.UserDto;
-import com.example.medicalmanagement.model.Role;
-import com.example.medicalmanagement.model.Speciality;
-import com.example.medicalmanagement.model.User;
-import com.example.medicalmanagement.model.UserRole;
+import com.example.medicalmanagement.model.*;
 import com.example.medicalmanagement.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
+
 import java.util.Iterator;
 import java.util.List;
 @Component
@@ -29,6 +27,7 @@ public class Reader implements ItemReader<UserDto> {
             List<UserDto> doctorDtos = doctors.stream()
                     .map(this::convertToDto)
                     .toList();
+
             userDtoIterator = doctorDtos.iterator();
         }
         if (userDtoIterator.hasNext()) {
@@ -48,6 +47,7 @@ public class Reader implements ItemReader<UserDto> {
         userDto.setSpecialities(doctor.getSpecialities().stream()
                 .map(Speciality::getName)
                 .toList());
+        userDto.setNotificationTypes(doctor.getNotificationTypes().stream().map(UserNotificationType::getNotificationType).toList());
         return userDto;
     }
 }

@@ -114,14 +114,6 @@
 						</goals>
 					</execution>
 				</executions>
-<!--				<configuration>-->
-<!--					<excludes>-->
-<!--						<exclude>**/config/**</exclude>-->
-<!--						<exclude>**/exceptionhandlers/**</exclude>-->
-<!--						<exclude>**/model/**</exclude>-->
-<!--						<exclude>**/dto/**</exclude>-->
-<!--					</excludes>-->
-<!--				</configuration>-->
 			</plugin>
 		</plugins>
 	</build>

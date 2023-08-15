@@ -1,19 +1,21 @@
 package com.example.email.service;
 
+import com.example.email.helper.EmailProperties;
 import com.example.email.senders.EmailNotificationSender;
 import com.example.email.senders.NotificationSenderStrategy;
 import com.example.email.senders.SlackNotificationSender;
 import com.example.email.senders.WhatsAppNotificationSender;
 import com.example.medicalmanagement.dto.UserDto;
 import com.example.medicalmanagement.model.NotificationType;
-import com.example.medicalmanagement.repository.UserRepository;
-import com.example.medicalmanagement.service.UserService;
+
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -21,49 +23,36 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
+@Setter
+@Getter
+@Component
 public class SendService {
     private final Logger logger = LoggerFactory.getLogger(SendService.class);
     private NotificationSenderStrategy strategy;
-    private UserDto userDto;
-    private final UserRepository userRepository;
-    private final UserService userService;
+    private final EmailProperties emailProperties;
+    public SendService(EmailProperties emailProperties) {
 
-
-//    private Map<NotificationType, NotificationSenderStrategy> notificationSenders;
-
-    @Value("${spring.mail.username}")
-    private String username;
-    @Value("${spring.mail.password}")
-    private String password;
-    @Value("${spring.mail.host}")
-    private String host;
-    @Value("${spring.mail.port}")
-    private int port;
-
-    public SendService(UserRepository userRepository, UserService userService) {
-        this.userRepository = userRepository;
-        this.userService = userService;
+        this.emailProperties = emailProperties;
     }
 
     public void sendEmail(String email, String message) {
-
         Properties properties = new Properties();
         properties.put("mail.smtp.auth", "true");
         properties.put("mail.smtp.starttls.enable", "true");
-        properties.put("mail.smtp.host", host);
-        properties.put("mail. smtp.port", port);
+        properties.put("mail.smtp.host", emailProperties.getHost());
+        properties.put("mail.smtp.port", emailProperties.getPort());
 
         Session session = Session.getInstance(properties, new Authenticator() {
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(username, password);
+                return new PasswordAuthentication(emailProperties.getUsername(), emailProperties.getPassword());
             }
         });
 
         try {
             MimeMessage mimeMessage = new MimeMessage(session);
 
-            mimeMessage.setFrom(new InternetAddress(username));
+            mimeMessage.setFrom(new InternetAddress(emailProperties.getUsername()));
 
             mimeMessage.setRecipient(Message.RecipientType.TO, new InternetAddress(email));
 
@@ -77,24 +66,26 @@ public class SendService {
             logger.error("Error sending email to: {}", email, e);
         }
     }
+
     public void sendNotification(String doctorEmail, String message, UserDto userDto) {
 
         List<NotificationType> types = userDto.getNotificationTypes();
         for (NotificationType preference : types) {
             switch (preference) {
-//                case EMAIL:
-//                    strategy = new EmailNotificationSender(new SendService(userRepository,userService));
-//                    strategy = new EmailNotificationSender("sildiricku3@gmail.com","tgimiemtglpvgecy","smtp.gmail.com",587);
-
-//                    strategy.sendNotification(doctorEmail, message);
-//                    sendEmail(doctorEmail, message);
+                case EMAIL:
+                    strategy = new EmailNotificationSender(new SendService(emailProperties));
+                    strategy.sendNotification(doctorEmail, message);
+                    break;
                 case WHATSAPP:
                     strategy = new WhatsAppNotificationSender();
                     strategy.sendNotification(doctorEmail, message);
+                    break;
                 case SLACK:
                     strategy = new SlackNotificationSender();
                     strategy.sendNotification(doctorEmail, message);
+                    break;
             }
+
         }
     }
 }

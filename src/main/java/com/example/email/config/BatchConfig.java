@@ -1,7 +1,6 @@
 package com.example.email.config;
 
 import com.example.email.service.MessageService;
-import com.example.email.service.SendService;
 import com.example.medicalmanagement.dto.UserDto;
 import com.example.medicalmanagement.model.User;
 import com.example.medicalmanagement.model.UserRole;
@@ -40,12 +39,8 @@ public class BatchConfig {
     private final Logger logger = LoggerFactory.getLogger(BatchConfig.class);
 
     List<User> doctorEmails = new ArrayList<>();
-    private final SendService sendService;
 
-    @Autowired
-    public BatchConfig(SendService sendService) {
-        this.sendService = sendService;
-    }
+
 
     @Bean
     public ItemReader<User> emailReader(UserRepository userRepository) {
@@ -79,8 +74,7 @@ public class BatchConfig {
     public ItemProcessor<UserDto, UserDto> itemProcessor(MessageService messageService) {
         return userDto -> {
             String emailMessage = messageService.generateEmailMessage(userDto);
-//            sendService.sendEmail(userDto.getEmail(), emailMessage);
-            messageService.sendNotification(emailMessage);
+            messageService.sendNotification(userDto,emailMessage);
             userDto.setEmailSent(true);
             return userDto;
         };
