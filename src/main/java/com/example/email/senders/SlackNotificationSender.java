@@ -7,7 +7,7 @@ public class SlackNotificationSender implements NotificationSenderStrategy {
     private final Logger logger = LoggerFactory.getLogger(SlackNotificationSender.class);
 
     @Override
-    public void sendNotification(String doctorEmail, String message) {
-        logger.info("Message sent via Slack to: {}", doctorEmail);
+    public void sendNotification(String recipientContactInfo, String message) {
+        logger.info("Message sent via Slack to: {}", recipientContactInfo);
     }
 }

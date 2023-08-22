@@ -62,9 +62,9 @@ public class EmailNotificationSender implements NotificationSenderStrategy {
     }
 
     @Override
-    public void sendNotification(String doctorEmail, String message) {
-        logger.error("Message sent via EMAIL to {}", doctorEmail);
-        sendEmail(doctorEmail, message);
+    public void sendNotification(String recipientContactInfo, String message) {
+        logger.error("Message sent via EMAIL to {}", recipientContactInfo);
+        sendEmail(recipientContactInfo, message);
     }
 
 }
