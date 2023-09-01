@@ -39,7 +39,7 @@ public class Reader implements ItemReader<UserDto> {
     private UserDto convertToDto(User doctor) {
         UserDto userDto = new UserDto();
         userDto.setId(doctor.getId());
-        userDto.setEmail(doctor.getEmail());
+        userDto.setContactInfo(doctor.getContactInfo());
         userDto.setFullName(doctor.getFullName());
         userDto.setRoles(doctor.getRoles().stream()
                 .map(Role::getUserRole)
@@ -48,6 +48,7 @@ public class Reader implements ItemReader<UserDto> {
                 .map(Speciality::getName)
                 .toList());
         userDto.setNotificationTypes(doctor.getNotificationTypes().stream().map(UserNotificationType::getNotificationType).toList());
+        userDto.setContactInfo(doctor.getContactInfo());
         return userDto;
     }
 }
