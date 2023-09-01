@@ -1,7 +1,8 @@
 package com.example.email.senders;
 
 
+import com.example.medicalmanagement.model.ContactInfo;
 
 public interface NotificationSenderStrategy {
-    void sendNotification(String doctorEmail, String message);
+    void sendNotification(ContactInfo recipientContactInfo , String message);
 }

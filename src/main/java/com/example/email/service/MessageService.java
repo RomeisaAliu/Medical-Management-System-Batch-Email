@@ -55,7 +55,7 @@ public class MessageService {
     public void sendNotification(UserDto userDto, String message) {
 
         if (userDto.getNotificationTypes() != null || !userDto.getNotificationTypes().isEmpty()) {
-            sendService.sendNotification(userDto.getEmail(), message, userDto);
+            sendService.sendNotification(userDto.getContactInfo(), message, userDto);
             userDto.setEmailSent(true);
         } else {
             logger.warn("Unsupported notification preference for doctor: {}", userDto.getFullName());

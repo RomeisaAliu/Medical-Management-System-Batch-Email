@@ -17,5 +17,5 @@ public class Writer implements ItemWriter<UserDto> {
         logger.info("Sending emails...");
         logger.info("Emails sent successfully.");
     }
-
+//Job completed successfully
 }

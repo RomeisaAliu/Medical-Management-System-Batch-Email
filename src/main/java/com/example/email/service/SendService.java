@@ -5,6 +5,7 @@ import com.example.email.senders.NotificationSenderStrategy;
 import com.example.email.senders.SlackNotificationSender;
 import com.example.email.senders.WhatsAppNotificationSender;
 import com.example.medicalmanagement.dto.UserDto;
+import com.example.medicalmanagement.model.ContactInfo;
 import com.example.medicalmanagement.model.NotificationType;
 
 import lombok.Getter;
@@ -31,22 +32,22 @@ public class SendService {
     }
 
 
-    public void sendNotification(String doctorEmail, String message, UserDto userDto) {
+    public void sendNotification(ContactInfo contactInfo, String message, UserDto userDto) {
 
         List<NotificationType> types = userDto.getNotificationTypes();
         for (NotificationType preference : types) {
             switch (preference) {
                 case EMAIL:
                     strategy = new EmailNotificationSender(emailNotificationSender.getEmailProperties());
-                    strategy.sendNotification(doctorEmail, message);
+                    strategy.sendNotification(contactInfo, message);
                     break;
                 case WHATSAPP:
                     strategy = new WhatsAppNotificationSender();
-                    strategy.sendNotification(doctorEmail, message);
+                    strategy.sendNotification(contactInfo, message);
                     break;
                 case SLACK:
                     strategy = new SlackNotificationSender();
-                    strategy.sendNotification(doctorEmail, message);
+                    strategy.sendNotification(contactInfo, message);
                     break;
             }
 
