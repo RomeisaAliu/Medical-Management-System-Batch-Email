@@ -66,10 +66,10 @@ public class EmailNotificationSender implements NotificationSenderStrategy {
 @Override
 public void sendNotification(ContactInfo recipientContactInfo, String message) {
     if (recipientContactInfo != null) {
-        logger.error("Message sent via EMAIL to {}", recipientContactInfo.getEmail());
+        logger.info("*****Message sent via EMAIL to {}", recipientContactInfo.getEmail());
         sendEmail(recipientContactInfo.getEmail(), message);
     } else {
-        logger.error("recipientContactInfo is null");
+        logger.info("*****recipientContactInfo is null");
     }
 }
 }

@@ -12,12 +12,12 @@ public class SlackNotificationSender implements NotificationSenderStrategy {
         if (recipientContactInfo != null) {
             String slackUserName = recipientContactInfo.getSlackUserName();
             if (slackUserName != null) {
-                logger.info("Message sent via Slack : {}", slackUserName);
+                logger.info("*****Message sent via Slack to: {}", slackUserName);
             } else {
-                logger.info("Message sent via Slack to {} (No Slack username)", recipientContactInfo);
+                logger.info("*****Message sent via Slack to {} (No Slack username)", recipientContactInfo);
             }
         } else {
-            logger.error("recipientContactInfo is null");
+            logger.error("*****recipientContactInfo is null");
         }
     }
 }
