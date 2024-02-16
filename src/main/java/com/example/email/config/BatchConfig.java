@@ -3,7 +3,9 @@ package com.example.email.config;
 import com.example.email.service.MessageService;
 import com.example.medicalmanagement.dto.UserDto;
 import com.example.medicalmanagement.model.User;
+import com.example.medicalmanagement.model.UserDetails;
 import com.example.medicalmanagement.model.UserRole;
+import com.example.medicalmanagement.repository.UserDetailsRepository;
 import com.example.medicalmanagement.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,13 +40,13 @@ public class BatchConfig {
 
     private final Logger logger = LoggerFactory.getLogger(BatchConfig.class);
 
-    List<User> doctorEmails = new ArrayList<>();
+    List<UserDetails> doctorEmails = new ArrayList<>();
 
 
     @Bean
-    public ItemReader<User> emailReader(UserRepository userRepository) {
+    public ItemReader<UserDetails> emailReader(UserDetailsRepository userDetailsRepository) {
         Sort sort = Sort.by(Sort.Direction.ASC, "fullName");
-        this.doctorEmails = userRepository.findByRolesUserRole(UserRole.DOCTOR, sort);
+        this.doctorEmails = userDetailsRepository.findByRolesUserRole(UserRole.DOCTOR, sort);
         return new IteratorItemReader<>(doctorEmails.iterator());
     }
 

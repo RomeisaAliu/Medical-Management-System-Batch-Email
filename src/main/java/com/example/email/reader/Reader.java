@@ -1,6 +1,7 @@
 package com.example.email.reader;
 import com.example.medicalmanagement.dto.UserDto;
 import com.example.medicalmanagement.model.*;
+import com.example.medicalmanagement.repository.UserDetailsRepository;
 import com.example.medicalmanagement.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,10 +13,10 @@ import java.util.Iterator;
 import java.util.List;
 @Component
 public class Reader implements ItemReader<UserDto> {
-    private final UserRepository userRepository;
+    private final UserDetailsRepository userRepository;
     private Iterator<UserDto> userDtoIterator;
-    public Reader(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public Reader(UserDetailsRepository userDetailsRepository) {
+        this.userRepository = userDetailsRepository;
         Logger logger = LoggerFactory.getLogger(Reader.class);
         logger.info("reading...");
     }
@@ -23,7 +24,7 @@ public class Reader implements ItemReader<UserDto> {
     public UserDto read() {
         if (userDtoIterator == null) {
             Sort sort = Sort.by(Sort.Direction.ASC, "fullName");
-            List<User> doctors = userRepository.findByRolesUserRole(UserRole.DOCTOR,sort);
+            List<UserDetails> doctors = userRepository.findByRolesUserRole(UserRole.DOCTOR, sort);
             List<UserDto> doctorDtos = doctors.stream()
                     .map(this::convertToDto)
                     .toList();
@@ -36,7 +37,7 @@ public class Reader implements ItemReader<UserDto> {
             return null;
         }
     }
-    private UserDto convertToDto(User doctor) {
+    private UserDto convertToDto(UserDetails doctor) {
         UserDto userDto = new UserDto();
         userDto.setId(doctor.getId());
         userDto.setContactInfo(doctor.getContactInfo());

@@ -1,9 +1,10 @@
 package com.example.email.senders;
 
+
+
 import com.example.email.helper.EmailProperties;
-
-
 import com.example.medicalmanagement.model.ContactInfo;
+import com.example.medicalmanagement.model.UserDetails;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
@@ -23,7 +24,7 @@ import java.util.Properties;
 public class EmailNotificationSender implements NotificationSenderStrategy {
 
     private final Logger logger = LoggerFactory.getLogger(EmailNotificationSender.class);
-    private final EmailProperties emailProperties;
+    private EmailProperties emailProperties;
 
     public EmailNotificationSender(EmailProperties emailProperties) {
 
@@ -63,13 +64,16 @@ public class EmailNotificationSender implements NotificationSenderStrategy {
     }
 
 
-@Override
-public void sendNotification(ContactInfo recipientContactInfo, String message) {
-    if (recipientContactInfo != null) {
-        logger.info("*****Message sent via EMAIL to {}", recipientContactInfo.getEmail());
-        sendEmail(recipientContactInfo.getEmail(), message);
-    } else {
-        logger.info("*****recipientContactInfo is null");
+
+    @Override
+    public void sendNotification(ContactInfo recipientContactInfo, String message) {
+        if (recipientContactInfo != null && recipientContactInfo.getUser() != null && recipientContactInfo.getUser().getUser().getEmail() != null) {
+            String userEmail = recipientContactInfo.getUser().getUser().getEmail();
+            logger.info("*****Message sent via EMAIL to {}", userEmail);
+            sendEmail(userEmail, message);
+        } else {
+            logger.info("*****recipientContactInfo is null or associated UserDetails is null or UserDetails's associated User's email is null");
+        }
     }
-}
+
 }
